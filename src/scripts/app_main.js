@@ -47,7 +47,9 @@ $(document).ready(function () {
  * @return {object} - Global crossroads object
  */
 function parseHash(newHash) {
-  if(newHash!==""){$.cookie(encodeURIComponent(config.default_repo) + '.lastHash', newHash,{expires:7});}
+  if (newHash !== "") {
+    $.cookie(encodeURIComponent(config.default_repo) + '.lastHash', newHash, {expires: 7});
+  }
   crossroads.parse(newHash);
 }
 
@@ -61,9 +63,9 @@ function parseHash(newHash) {
 function init() {
   crossroads.ignoreState = true;
   crossroads.addRoute(':?query:', homePage);
-  crossroads.addRoute('{formName}:?query:', frontPage);
-  crossroads.addRoute('{formName}/new:?query:', newPage);
-  crossroads.addRoute('{formName}/{id}:?query:', viewEditPage);
+  crossroads.addRoute('{formName}/:?query:', frontPage);
+  crossroads.addRoute('{formName}/new/:?query:', newPage);
+  crossroads.addRoute('{formName}/{id}/:?query:', viewEditPage);
   oLogin = new cot_login({
     ccRoot: config.httpHost.app["prod"],
     welcomeSelector: "#app-content-right",
@@ -97,7 +99,7 @@ function initFrontPage(data) {
       hasher.changed.add(parseHash); // Parse hash changes
       hasher.init(); // Start listening for history change
 
-      typeof registerEvents==="function"?registerEvents():"";
+      typeof registerEvents === "function" ? registerEvents() : "";
       // scroll to top fade-in fade-out
       $(window).scroll(function () {
         if ($(this).scrollTop() > 50) {
@@ -108,7 +110,7 @@ function initFrontPage(data) {
       });
 
       // Scroll to top
-      $("#back-to-top").on('click',function () {
+      $("#back-to-top").on('click', function () {
         $("#back-to-top").tooltip('hide');
         $("html, body").animate({
           scrollTop: 0
@@ -120,7 +122,7 @@ function initFrontPage(data) {
       /**
        * Optional: implement a function appInitialize with no parameters to perform any tasks post render
        */
-      typeof appInitialize==="function"?appInitialize():"";
+      typeof appInitialize === "function" ? appInitialize() : "";
 
     });
 
@@ -193,7 +195,7 @@ function tpl(id, url, callback) {
  */
 function homePage() {
   let lastView = $.cookie(encodeURIComponent(config.default_repo) + '.lastHash');
-  hasher.setHash((lastView ? lastView : config.default_view + '?ts=' + new Date().getTime() + '&status=' ) );
+  hasher.setHash((lastView ? lastView : config.default_view + '?ts=' + new Date().getTime() + '&status=' ));
 }
 
 /**
@@ -254,23 +256,23 @@ function frontPage(formName, query) {
  * method for creating and loading DataTable into container
  */
 function openView(status, filter, repo, target, formName) {
- //console.log(status, filter, repo, target, formName)
+  //console.log(status, filter, repo, target, formName)
   //Update View Title
   let columnDefs, view, viewname;
   viewname = (status == "" ? "All " : status + " ") + config.listName[formName];
   $("#viewtitle").html(viewname);
   //set the last user view to return to after search OR viewing a document
-  $.cookie(encodeURIComponent(config.default_repo) + '.lastView', formName, {expires:7});
-  $.cookie(encodeURIComponent(config.default_repo) + '.lastViewName', viewname, {expires:7});
-  $.cookie(encodeURIComponent(config.default_repo) + '.lastViewHash', hasher.getHash(), {expires:7});
-  [columnDefs, view]= getColumnDefinitions(formName, filter);
+  $.cookie(encodeURIComponent(config.default_repo) + '.lastView', formName, {expires: 7});
+  $.cookie(encodeURIComponent(config.default_repo) + '.lastViewName', viewname, {expires: 7});
+  $.cookie(encodeURIComponent(config.default_repo) + '.lastViewHash', hasher.getHash(), {expires: 7});
+  [columnDefs, view] = getColumnDefinitions(formName, filter);
   //sequentially set the column targets property: 1, 2, 3, 4...
   $.each(columnDefs, function (i, col) {
     col.targets = i;
   });
   // build cc_retrieve_view constructor
   let args = {
-    "url": config.httpHost.app[httpHost] + config.api.get + repo + '/' + view ,
+    "url": config.httpHost.app[httpHost] + config.api.get + repo + '/' + view,
     "target": $("#" + target),
     "formName": formName,
     "columnDefs": columnDefs,
@@ -291,20 +293,20 @@ function openView(status, filter, repo, target, formName) {
     $("#btn-adminSearch").find('i').removeClass('glyphicon glyphicon-refresh').addClass('glyphicon glyphicon-search');
     myDataTable.dt.search(this.value).draw();
   });
-/*
-  $('#tabExportCSV').click(function () {
-    $(".dt-button.buttons-csv.buttons-html5").click();
-  });
-  $('#tabExportEXCEL').click(function () {
-    $(".dt-button.buttons-excel.buttons-html5").click();
-  });
-  $('#tabExportPDF').click(function () {
-    $(".dt-button.buttons-pdf.buttons-html5").click();
-  });
-  $('#tabExportCOPY').click(function () {
-    $(".dt-button.buttons-copy.buttons-html5").click();
-  });
-*/
+  /*
+    $('#tabExportCSV').click(function () {
+      $(".dt-button.buttons-csv.buttons-html5").click();
+    });
+    $('#tabExportEXCEL').click(function () {
+      $(".dt-button.buttons-excel.buttons-html5").click();
+    });
+    $('#tabExportPDF').click(function () {
+      $(".dt-button.buttons-pdf.buttons-html5").click();
+    });
+    $('#tabExportCOPY').click(function () {
+      $(".dt-button.buttons-copy.buttons-html5").click();
+    });
+  */
   toggleView("view_pane");
   //typeof registerEvents==="function"?registerEvents():"";
   return myDataTable;
@@ -354,18 +356,17 @@ function viewEditPage(formName, id, query) {
 
     $.ajax(
       {
-        "url": config.httpHost.app[httpHost] + config.api.get + repo + '/' + formName + "('" + id + "')",
+        "url": config.httpHost.app[httpHost] + config.api.get + repo + '/' + formName + "('" + id + "')?$format=application/json;odata.metadata=none",
         "headers": {
           "Authorization": "AuthSession " + getCookie(config.default_repo + '.sid')
         }
       }
     )
       .done(function (data) {
-        /*@ToDO: find out/fix hack around issue with etag*/
-        data["@odata.etag"] = "";
+
         $('.forForm').show();
         $('.forView').hide();
-        $("#viewtitle").html(data[config.formHeaderFieldMap[formName] ]);
+        $("#viewtitle").html(data[config.formHeaderFieldMap[formName]]);
         loadForm("#form_pane", data, id, repo, formName);
       })
       .fail(function (textStatus, error) {
@@ -405,26 +406,26 @@ function loadForm(destinationSelector, data, fid, repo, form_id) {
   app.forms[form_id] = f;
   f.render({"target": destinationSelector});
 
-  $('.dropzone').each(function(index){
+  $('.dropzone').each(function (index) {
     let upload_defaults = config.upload_defaults;
-    let maxFiles = parseInt($(this).attr("maxFiles"))?parseInt($(this).attr("maxFiles")):upload_defaults.maxFiles;
-    let maxFilesize = parseInt($(this).attr("maxFilesize")) ? parseInt($(this).attr("maxFilesize")):upload_defaults.maxFilesize;
-    let acceptedFiles = $(this).attr("acceptedFiles") ? $(this).attr("acceptedFiles"): upload_defaults.acceptedFiles;
-    let dictDefaultMessage =  $(this).attr("dictDefaultMessage") ?  $(this).attr("dictDefaultMessage") : upload_defaults.dictDefaultMessage ;
-    let dictFileTooBig =   $(this).attr("dictFileTooBig") ? $(this).attr("dictFileTooBig"): upload_defaults.dictFileTooBig ;
-    let addRemoveLinks= $(this).attr("addRemoveLinks")=='' ? upload_defaults.addRemoveLinks:($(this).attr("addRemoveLinks")=='true');
+    let maxFiles = parseInt($(this).attr("maxFiles")) ? parseInt($(this).attr("maxFiles")) : upload_defaults.maxFiles;
+    let maxFilesize = parseInt($(this).attr("maxFilesize")) ? parseInt($(this).attr("maxFilesize")) : upload_defaults.maxFilesize;
+    let acceptedFiles = $(this).attr("acceptedFiles") ? $(this).attr("acceptedFiles") : upload_defaults.acceptedFiles;
+    let dictDefaultMessage = $(this).attr("dictDefaultMessage") ? $(this).attr("dictDefaultMessage") : upload_defaults.dictDefaultMessage;
+    let dictFileTooBig = $(this).attr("dictFileTooBig") ? $(this).attr("dictFileTooBig") : upload_defaults.dictFileTooBig;
+    let addRemoveLinks = $(this).attr("addRemoveLinks") == '' ? upload_defaults.addRemoveLinks : ($(this).attr("addRemoveLinks") == 'true');
     let dictMaxFilesExceeded = $(this).attr("dictMaxFilesExceeded") ? $(this).attr("dictMaxFilesExceeded") : upload_defaults.dictMaxFilesExceeded;
 
 
-    let myDropzone = new Dropzone("div#"+$(this).attr("id"), {
-      "dz_id":$(this).attr("id")+ "_dz","fid":fid, "form_id":form_id ,
-      "url": config.httpHost.app[httpHost] +  config.api.upload +config.upload_repo + '/' + config.upload_repo,
-      "acceptedFiles":acceptedFiles,
+    let myDropzone = new Dropzone("div#" + $(this).attr("id"), {
+      "dz_id": $(this).attr("id") + "_dz", "fid": fid, "form_id": form_id,
+      "url": config.httpHost.app[httpHost] + config.api.upload + config.upload_repo + '/' + config.upload_repo,
+      "acceptedFiles": acceptedFiles,
       "maxFiles": maxFiles,
-      "dictDefaultMessage":dictDefaultMessage,
-      "maxFilesize":maxFilesize,
-      "dictFileTooBig":dictFileTooBig,
-      "addRemoveLinks":addRemoveLinks,
+      "dictDefaultMessage": dictDefaultMessage,
+      "maxFilesize": maxFilesize,
+      "dictFileTooBig": dictFileTooBig,
+      "addRemoveLinks": addRemoveLinks,
       "dictMaxFilesExceeded": dictMaxFilesExceeded
     });
     dropzones[$(this).attr("id")] = myDropzone;
@@ -446,9 +447,9 @@ function loadForm(destinationSelector, data, fid, repo, form_id) {
   // View/Edit existing report
   else {
     f.setData(data);
-    $('.dropzone').each(function(){
+    $('.dropzone').each(function () {
       console.log('show uploads')
-    showUploads(dropzones[$(this).attr("id")] ,$(this).attr("id"), data, repo, true, true);
+      showUploads(dropzones[$(this).attr("id")], $(this).attr("id"), data, repo, true, true);
     })
 
     $("#modifiedBy").val(modifiedUsername);
@@ -466,9 +467,9 @@ function loadForm(destinationSelector, data, fid, repo, form_id) {
       }
     }
   }
- //f.CotForm.callFunction(toggleView("form_pane");)
+  //f.CotForm.callFunction(toggleView("form_pane");)
   toggleView("form_pane");
- //typeof registerEvents==="function"?registerEvents():"";
+  //typeof registerEvents==="function"?registerEvents():"";
 }
 
 /**
@@ -496,13 +497,13 @@ function saveReport(action, payload, msg, repo, form_id) {
     if (jqXHR.status == 201 && data.id) {
       //myDataTable.dt.ajax.reload();
       // Route to /{id} draft page if new report is successfully saved
-      hasher.setHash(form_id + '/' + data.id + '?alert=success&msg=' + msg.done + '&ts=' + new Date().getTime());
+      hasher.setHash(form_id + '/' + data.id + '/?alert=success&msg=' + msg.done + '&ts=' + new Date().getTime());
     } else {
-      hasher.setHash(form_id + '/new?alert=danger&msg=' + msg.fail + '&ts=' + new Date().getTime());
+      hasher.setHash(form_id + '/new/?alert=danger&msg=' + msg.fail + '&ts=' + new Date().getTime());
     }
   }).error(function (textStatus, error) {
     alert("POST Request Failed: " + textStatus + ", " + error);
-    hasher.setHash(form_id + '/new?alert=danger&msg=' + msg.fail + '&ts=' + new Date().getTime());
+    hasher.setHash(form_id + '/new/?alert=danger&msg=' + msg.fail + '&ts=' + new Date().getTime());
   }).always(function () {
     $(".btn").removeAttr('disabled').removeClass('disabled');
   });
@@ -521,7 +522,7 @@ function saveReport(action, payload, msg, repo, form_id) {
 function updateReport(fid, action, payload, msg, repo, form_id) {
   $(".btn").prop('disabled', true);
   $.ajax({
-    "url": config.httpHost.app[httpHost] + config.api.get + repo + '/' + form_id + "('" + fid + "')"+ '?sid=' + getCookie(repo + '.sid'),
+    "url": config.httpHost.app[httpHost] + config.api.get + repo + '/' + form_id + "('" + fid + "')" + '?sid=' + getCookie(repo + '.sid'),
     "type": "PATCH",
     "data": payload,
     "headers": {
@@ -534,19 +535,51 @@ function updateReport(fid, action, payload, msg, repo, form_id) {
     //myDataTable.dt.ajax.reload();
     switch (action) {
       case 'save':
-        hasher.setHash(form_id + '/' + fid + '?alert=success&msg=' + msg.done + '&ts=' + new Date().getTime());
+        hasher.setHash(form_id + '/' + fid + '/?alert=success&msg=' + msg.done + '&ts=' + new Date().getTime());
         break;
       default:
-        hasher.setHash(form_id + '/' + fid + '?alert=success&msg=' + msg.done + '&ts=' + new Date().getTime());
+        hasher.setHash(form_id + '/' + fid + '/?alert=success&msg=' + msg.done + '&ts=' + new Date().getTime());
         break;
     }
   }).error(function (textStatus, error) {
     alert("PATCH Request Failed: " + textStatus + ", " + error);
-    hasher.setHash(form_id + '/' + fid + '?alert=danger&msg=' + msg.fail + '&ts=' + new Date().getTime());
+    hasher.setHash(form_id + '/' + fid + '/?alert=danger&msg=' + msg.fail + '&ts=' + new Date().getTime());
   }).always(function () {
     $(".btn").removeAttr('disabled').removeClass('disabled');
   });
 
+}
+
+/**
+ * @method deleteReport
+ * @param fid {string} - Entity id to be deleted
+ * @param collectionName {string} - Entity collection name
+ * @param after {function} - call and return true or false if the ajax delete was successful
+ * @returns null
+ */
+function deleteReport(fid, collectionName, after) {
+  console.log(fid, collectionName, after)
+  let _after = after?after:null;
+  if (fid && collectionName) {
+
+    $.ajax({
+      "url": config.httpHost.app[httpHost] + config.api.get + config.default_repo + '/' + collectionName + "('" + fid + "')",
+      "type": "delete",
+      "async": false,
+      "headers": {
+        "Authorization": "AuthSession " + getCookie(config.default_repo + '.sid'),
+        "Content-Type": "application/json; charset=utf-8;",
+        "Cache-Control": "no-cache"
+      },
+      "dataType": "json"
+    }).success(function (data, jqXHR) {
+      _after ? _after(true) : "";
+    }).error(function (textStatus, error) {
+      _after ? _after(false) : "";
+    });
+  } else {
+    _after ? _after(false) : "";
+  }
 }
 
 /**
@@ -561,8 +594,8 @@ function processForm(action, repo, form_id, fid) {
   //get the form data
   let f_data = app.forms[form_id].getData();
   //process any drop zones and add the uploaded file data to the payload.
-  $('.dropzone').each(function(index){
-    f_data[$(this).attr("id")]= processUploads(dropzones[$(this).attr("id")], repo, true);
+  $('.dropzone').each(function (index) {
+    f_data[$(this).attr("id")] = processUploads(dropzones[$(this).attr("id")], repo, true);
   })
   console.log(f_data);
   msg = {
@@ -577,40 +610,45 @@ function processForm(action, repo, form_id, fid) {
     saveReport(action, JSON.stringify(f_data), msg, repo, form_id);
   }
 }
-function toggleView(target){
-  let appName,lastView,lastViewHash, lastViewName,lastHash;
+
+function toggleView(target) {
+  let appName, lastView, lastViewHash, lastViewName, lastHash;
   appName = config.default_repo;
- //lastView = $.cookie(encodeURIComponent(appName) + '.lastView');
+  //lastView = $.cookie(encodeURIComponent(appName) + '.lastView');
   lastViewHash = $.cookie(encodeURIComponent(appName) + '.lastViewHash');
   lastViewName = $.cookie(encodeURIComponent(appName) + '.lastViewName');
- // lastHash = $.cookie(encodeURIComponent(appName) + '.lastHash');
-
-  if(target==="view_pane"){
+  // lastHash = $.cookie(encodeURIComponent(appName) + '.lastHash');
+  console.log(target, lastViewHash, lastViewName);
+  if (target === "view_pane") {
     $("#view_pane, .forView").show();
     $("#form_pane, .forForm").hide();
     $("#form_pane").html("");
-    $.cookie(appName+ '.lastHash', lastViewHash,{expires:7});
+    $.cookie(appName + '.lastHash', lastViewHash, {expires: 7});
     setHashSilently(lastViewHash);
-    if ($("#view_pane").is(":empty")){
-      hasher.setHash( appName + '?ts=' + new Date().getTime() + '&status='  );
-    }
-    else{
 
-      $("#viewtitle").html(lastViewName===""?config.title:lastViewName);
+    if ($("#view_pane").is(":empty")) {
+      hasher.setHash(appName + '/?ts=' + new Date().getTime() + '&status=');
+    }
+    else {
+      console.log('view reload')
+      myDataTable.dt.ajax.reload(null, false);
+      $("#viewtitle").html(lastViewName === "" ? config.title : lastViewName);
     }
   }
-  else{
+  else {
     $("#view_pane").hide();
     $(".forView").hide();
     $("#form_pane").show();
     $(".forForm").show();
   }
 }
-function setHashSilently(hash){
+
+function setHashSilently(hash) {
   hasher.changed.active = false; //disable changed signal
   hasher.setHash(hash); //set hash without dispatching changed signal
   hasher.changed.active = true; //re-enable signal
 }
+
 /**
  * @class cc_retrieve_view
  * @classdesc COT C3API oData DataTable implementation
@@ -669,11 +707,21 @@ class cc_retrieve_view {
   getColumnSortOrder() {
     let arrSortOrder = [];
     $.each(this.columnDefs, function (i, item) {
-      if (item.data != null) {
+      if (item.data != null && item.sortOrder) {
         arrSortOrder.push(new Array(i, item.sortOrder ? item.sortOrder : this.defaultSortOrder))
       }
     });
     return arrSortOrder
+  }
+
+  getSelected() {
+    let _this = this, ret = [];
+    $.each(this.dt.column(0).checkboxes.selected(), function (i, val) {
+      //console.log('selected',i,val);
+      ret.push(val);
+      //ret.push(_this.dt.row($('#' + val)).data());
+    });
+    return ret;
   }
 
   /**
@@ -726,20 +774,19 @@ class cc_retrieve_view {
       'buttons': ['pdfHtml5', 'csvHtml5', 'copyHtml5', 'excelHtml5'],
       'deferRender': false,
       //'stateSave': true,
-     // 'stateDuration': 0,
+      // 'stateDuration': 0,
       'sAjaxSource': this.url,
       'fnServerData': this.fnServerOData,
       'iODataVersion': 4,
       'bUseODataViaJSONP': false,
       'createdRow': function (row, data) {
-        let doc_id = data.id ? data.id : data['@odata.id'].substring((data['@odata.id'].indexOf("('") + 2), (data['@odata.id'].indexOf("')")));
+        let doc_id = data.id ? data.id : "";
+        $(row).attr('id', doc_id);
         $(row).attr('data-id', doc_id);
-        $(row).attr('data-link', data['@odata.id']);
         $(row).attr('data-formName', _this.formName);
-        $(row).attr('data-OrderNumber', data['OrderNumber']);
       },
       "columnDefs": this.columnDefs,
-      "select":true,
+      "select": true,
       'initComplete': function () {
         //Add filtering Table if requested
         this.api().columns().every(function () {
@@ -826,28 +873,29 @@ class cc_retrieve_view {
           }
         });
 
-       // $("#maincontent .dataTable tbody tr").on('click', function(){
-       //    hasher.setHash($(this).attr('data-formName') + '/' + $(this).attr('data-id') + '?ts=' + new Date().getTime() );
-       // });
+        // $("#maincontent .dataTable tbody tr").on('click', function(){
+        //    hasher.setHash($(this).attr('data-formName') + '/' + $(this).attr('data-id') + '?ts=' + new Date().getTime() );
+        // });
 
-        let tbody = $('#'+unid+ ' tbody');
-        let dt = $('#'+unid).DataTable();
+        let tbody = $('#' + unid + ' tbody');
+        let dt = $('#' + unid).DataTable();
         tbody.on('dblclick', 'tr', function () {
           //let data = dt.row( this ).data();
+          //console.log('row data:',data);
           $(this).addClass('selected');
-          hasher.setHash($(this).attr('data-formName') + '/' + $(this).attr('data-id') + '?ts=' + new Date().getTime() );
-        } );
+          hasher.setHash($(this).attr('data-formName') + '/' + $(this).attr('data-id') + '/?ts=' + new Date().getTime());
+        });
 
-               tbody.on('click', 'tr', function () {
+        tbody.on('click', 'tr', function () {
 
-                 if ( $(this).hasClass('selected') ) {
-                   $(this).removeClass('selected');
-                 }
-                 else {
-                   dt.$('tr.selected').removeClass('selected');
-                   $(this).addClass('selected');
-                 }
-               } );
+          if ($(this).hasClass('selected')) {
+            $(this).removeClass('selected');
+          }
+          else {
+            dt.$('tr.selected').removeClass('selected');
+            $(this).addClass('selected');
+          }
+        });
 
         $('.input-mini.form-control').each(function (i) {
           let cb = $(this);
@@ -885,7 +933,7 @@ class cc_retrieve_view {
     $.each(aoData, function (i, value) {
       oParams[value.name] = value.value;
     });
-    let data = {"$format": "json", "$count": true};
+    let data = {"$format": "application/json;odata.metadata=none", "$count": true};
     let bJSONP = oSettings.oInit.bUseODataViaJSONP;
     if (bJSONP) {
       data.$callback = "odatatable_" + (oSettings.oFeatures.bServerSide ? oParams.sEcho : ("load_" + Math.floor((Math.random() * 1000) + 1)));
@@ -987,17 +1035,19 @@ class cc_retrieve_view {
  * @param repo {string} - the event repo name that will be used to use in the delete url.
  * @param status {string} - Status to set the uploaded file to (delete or keep)
  */
-function updateAttachmentStatus(DZ,bin_id, repo, status){
-  let deleteURL = config.httpHost.app[httpHost] + config.api.upload_post + 'binUtils/'+ config.default_repo + '/' + bin_id + '/'+status+'?sid=' + getCookie(config.default_repo+'.sid');
-  $.get(deleteURL, function(){
-    if(status=='delete'){
-      $('#'+ bin_id).remove();
-      DZ.existingUploads = $.grep(DZ.existingUploads, function(e){return e.bin_id!=bin_id})
+function updateAttachmentStatus(DZ, bin_id, repo, status) {
+  let deleteURL = config.httpHost.app[httpHost] + config.api.upload_post + 'binUtils/' + config.default_repo + '/' + bin_id + '/' + status + '?sid=' + getCookie(config.default_repo + '.sid');
+  $.get(deleteURL, function () {
+    if (status == 'delete') {
+      $('#' + bin_id).remove();
+      DZ.existingUploads = $.grep(DZ.existingUploads, function (e) {
+        return e.bin_id != bin_id
+      })
 
       let form_id = DZ.options.form_id;
       processForm('updateAttachments', form_id, repo)
     }
-  }).fail(function(){
+  }).fail(function () {
     console.log('failed');
   });
 }
@@ -1013,7 +1063,7 @@ function processUploads(DZ, repo, sync) {
   let _files = DZ.getFilesWithStatus(Dropzone.SUCCESS);
   let syncFiles = sync;
   if (_files.length == 0) {
-  //  console.log('No Files Attached')
+    //  console.log('No Files Attached')
   } else {
     $.each(_files, function (i, row) {
       let json = JSON.parse(row.xhr.response);
@@ -1038,7 +1088,7 @@ function processUploads(DZ, repo, sync) {
  * @param allowDelete {boolean} - display the delete button?
  * @param showTable {boolean} - display the uploaded file table.
  */
-function showUploads(DZ, id, data, repo, allowDelete,showTable) {
+function showUploads(DZ, id, data, repo, allowDelete, showTable) {
   console.log(id, data, showTable);
   /*
   let thisDZ = DZ;
@@ -1070,25 +1120,27 @@ function showUploads(DZ, id, data, repo, allowDelete,showTable) {
    showTable:    display the uploaded file table.
    */
   let thisDZ = DZ;
-  let _uploads=`<table width='100%' class="table-condensed table-responsive"><thead><tr><th>Name</th><th>Size</th><th>Actions</th></tr></thead><tbody>`;
+  let _uploads = `<table width='100%' class="table-condensed table-responsive"><thead><tr><th>Name</th><th>Size</th><th>Actions</th></tr></thead><tbody>`;
   thisDZ.existingUploads = data[id];
   //thisDZ.emit("addedFile", data[id]);
-  $.each(data[id], function(i, row) {
-    let getURL = config.httpHost.app[httpHost] + config.api.upload +repo + '/' + row.bin_id + '?sid=' + getCookie(config.default_repo+'.sid');
-    let  getLink= `<button onclick="event.preventDefault();window.open('` + getURL + `')"><span class="glyphicon glyphicon-download"></span></button>`;
-    let deleteLink = '<button class="removeUpload" data-id="' + i + '" data-bin="'+row.bin_id+'" ><span class="glyphicon glyphicon-trash"></span></button>';
+  $.each(data[id], function (i, row) {
+    let getURL = config.httpHost.app[httpHost] + config.api.upload + repo + '/' + row.bin_id + '?sid=' + getCookie(config.default_repo + '.sid');
+    let getLink = `<button onclick="event.preventDefault();window.open('` + getURL + `')"><span class="glyphicon glyphicon-download"></span></button>`;
+    let deleteLink = '<button class="removeUpload" data-id="' + i + '" data-bin="' + row.bin_id + '" ><span class="glyphicon glyphicon-trash"></span></button>';
     let buttons = getLink;
     let caption = row.name;
-    buttons+= allowDelete ? deleteLink : '';
-    _uploads += '<tr id="'+ row.bin_id +'"><td>'+row.name+'</td><td>'+row.size+'</td><td>'+buttons+'</td></tr>'
+    buttons += allowDelete ? deleteLink : '';
+    _uploads += '<tr id="' + row.bin_id + '"><td>' + row.name + '</td><td>' + row.size + '</td><td>' + buttons + '</td></tr>'
 
     //make the thumbnails clickable to view file
-    thisDZ.on("addedfile", function(file) {
+    thisDZ.on("addedfile", function (file) {
       file.getURL = getURL;
       file.caption = caption;
-      file.previewElement.addEventListener("click", function () {
-        window.open(file.getURL);
-      });
+      if (row.bin_id == file.bin_id) {
+        file.previewElement.addEventListener("click", function () {
+          window.open(file.getURL);
+        });
+      }
       //file._captionLabel = Dropzone.createElement("<p>" + file.caption + "</p>")
       //file.previewElement.appendChild(file._captionLabel);
 
@@ -1100,18 +1152,19 @@ function showUploads(DZ, id, data, repo, allowDelete,showTable) {
     thisDZ.createThumbnailFromUrl(row, getURL);
     //set the uploaded file to completed and set the max files for this dropzone.
     thisDZ.emit("complete", row);
-    thisDZ.options.maxFiles =thisDZ.options.maxFiles-1;
+    thisDZ.options.maxFiles = thisDZ.options.maxFiles - 1;
 
   });
 
-  _uploads+=`</tbody></table>` ;
-  showTable ? $('#'+id+ '_display').html(_uploads):"";
+  _uploads += `</tbody></table>`;
+  showTable ? $('#' + id + '_display').html(_uploads) : "";
 
-  thisDZ.on("removedfile", function(file){
-    updateAttachmentStatus( thisDZ, file.bin_id,repo, 'delete');
+  thisDZ.on("removedfile", function (file) {
+    updateAttachmentStatus(thisDZ, file.bin_id, repo, 'delete');
   });
   $(".removeUpload").on('click', function () {
-    event.preventDefault();updateAttachmentStatus( thisDZ, $(this).attr('data-bin'),repo, 'delete', $(this).attr('data-id'));
+    event.preventDefault();
+    updateAttachmentStatus(thisDZ, $(this).attr('data-bin'), repo, 'delete', $(this).attr('data-id'));
   });
 }
 
@@ -1120,41 +1173,42 @@ function showUploads(DZ, id, data, repo, allowDelete,showTable) {
  * @param stringType {string} file type of uploaded file you want the returned thumbnail
  * @returns {string} location of the thumbnail image
  */
-function getDefaultThumbnail(stringType){
+function getDefaultThumbnail(stringType) {
   let thumb = "";
   let img_root = "img";
-  let type =   stringType.indexOf("/")>-1 ? stringType.split("/")[1]:stringType
-  switch(type){
+  let type = stringType.indexOf("/") > -1 ? stringType.split("/")[1] : stringType
+  switch (type) {
     case "jpeg":
     case "mpeg":
     case "png":
     case "image":
-      thumb = img_root +"/imageicon.png";
+      thumb = img_root + "/imageicon.png";
       break;
     case "mp3":
     case "mp4":
     case "wma":
-      thumb = img_root +"/audio.png";
+      thumb = img_root + "/audio.png";
       break;
     case "doc":
-      thumb = img_root +"/word.png";
+      thumb = img_root + "/word.png";
       break;
     case "ppt":
-      thumb = img_root +"/ppt.png";
+      thumb = img_root + "/ppt.png";
       break;
     case "xsl":
     case "xslx":
     case "csv":
-      thumb = img_root +"excelFile.png";
+      thumb = img_root + "excelFile.png";
       break;
     case "pdf":
-      thumb = img_root +"pdf.png";
+      thumb = img_root + "pdf.png";
       break;
     default:
-      thumb = img_root +"default.png";
+      thumb = img_root + "default.png";
   }
   return thumb
 }
+
 /*
 Additional functionality for coreJS
 @ToDo merge these methods into a forked branch of coreJS
@@ -1249,3 +1303,101 @@ CotForm.prototype.setData = function (data) {
     }
   }
 };
+
+/**
+ *
+ * @param tm_id {string} id of the top menu item to append to
+ * @param icon_class {string}  - glyphicon or font awesome
+ * @param button_class {string} - class name for attaching events or other business logic
+ * @param title {string}
+ * @param action {function}  - function to be executed on click
+ */
+
+function test(){
+  let top = addNavBarItem("","","","","Top",null, "dropdown");
+  let sub = addNavBarSubItem("","","","","Sub",null, "dropdown");
+  let mi = addNavBarMenuItem("glyphicon glyphicon-arrow-left","btn-test","My Test Button",function(){bootbox.alert("TEST 123")});
+  $(".nav.navbar-nav.navbar-right").prepend(top);
+  top.find('ul').append(sub);
+  sub.find('ul').append(mi);
+  $("#view-action-menu").find('ul:first').append(mi);
+}
+
+
+/**
+ *
+ * @param li_class
+ * @param li_id
+ * @param icon_class
+ * @param button_class
+ * @param html
+ * @param action
+ * @param after
+ * @param type
+ * @returns {jQuery|HTMLElement}
+ */
+function addNavBarItem(li_class, li_id, icon_class, button_class, html, action,  type){
+  let li = $('<li>'),a  = $('<a>'),icon  = $('<span>'), content;
+
+  li.attr('class',li_class?li_class:"").attr('id',li_id?li_id:'');
+  icon.attr('class', icon_class?icon_class:"");
+  a.attr('class',button_class?button_class:"");
+  action ? a.on("click", action):"";
+
+  switch(type){
+    case 'html':
+      content = li.append(html);
+    break;
+    case 'button':
+      content =li.append(a.append(icon).append(' '+html));
+      break;
+    case 'dropdown':
+      let caret  = $('<span>');
+      caret.attr('class','caret');
+      let ul = $('<ul>');
+      ul.attr('class','dropdown-menu');
+      li.attr('class','dropdown ');
+      a.attr('data-toggle','dropdown');
+      a.append(icon.append(''+ html)).append(caret);
+      content =li.append(a).append(ul);
+      break;
+  }
+
+  return content;
+}
+function addNavBarSubItem(li_class, li_id, icon_class, button_class, html, action, type){
+  let li = $('<li>'),a  = $('<a>'),icon  = $('<span>'), content;
+
+  li.attr('class',li_class?li_class:"").attr('id',li_id?li_id:'');
+  icon.attr('class', icon_class?icon_class:"");
+  a.attr('class',button_class?button_class:"");
+  action ? a.on("click", action):"";
+
+  switch(type){
+    case 'html':
+      content = li.append(html);
+      break;
+    case 'button':
+      content =li.append(a.append(icon).append(' '+html));
+      break;
+    case 'dropdown':
+
+      let ul = $('<ul>');
+      ul.attr('class','dropdown-menu');
+      li.attr('class','dropdown-submenu ');
+      a.attr('tab-index','0');
+      a.append(icon.append(''+ html));
+      content =li.append(a).append(ul);
+      break;
+  }
+
+  return content;
+}
+function addNavBarMenuItem(icon_class, button_class, title, action){
+  let li = $('<li>'),a  = $('<a>'),icon  = $('<span>');
+  icon.attr('class', icon_class?icon_class:"");
+  a.attr('class',button_class?button_class:"");
+  action ? a.on("click", action):"";
+  li.append(a.append(icon).append(' '+title));
+  return li;
+}
