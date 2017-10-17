@@ -18,6 +18,7 @@ const app = new cot_app('', {
 });
 let httpHost, oLogin, config, myDataTable;
 let dropzones = [];
+let sections, mymodel;
 /**
  *
  * @method ready
@@ -86,14 +87,8 @@ function initFrontPage(data) {
   // Save group names based on user's group permissions
   if (data && data.groups) {
     config.username = oLogin.username;
-    /*
-    hasher.initialized.add(parseHash); // Parse initial hash
-    hasher.changed.add(parseHash); // Parse hash changes
-    hasher.init(); // Start listening for history change
-*/
 
     tpl('#app-content-bottom', 'html/main.html', function () {
-
 
       hasher.initialized.add(parseHash); // Parse initial hash
       hasher.changed.add(parseHash); // Parse hash changes
@@ -125,7 +120,6 @@ function initFrontPage(data) {
       typeof appInitialize === "function" ? appInitialize() : "";
 
     });
-
   }
 }
 
@@ -308,7 +302,7 @@ function openView(status, filter, repo, target, formName) {
     });
   */
   toggleView("view_pane");
-  //typeof registerEvents==="function"?registerEvents():"";
+
   return myDataTable;
 }
 
@@ -389,22 +383,26 @@ function viewEditPage(formName, id, query) {
  * crossroads.addRoute('{formName}/{id}:?query:', viewEditPage);
  */
 function loadForm(destinationSelector, data, fid, repo, form_id) {
-  //console.log('loadForm', destinationSelector, data, fid, repo, form_id);
+
   $(destinationSelector).empty();
+
+  [sections, mymodel]= getSubmissionSections(form_id);
 
   let f = new CotForm({
     "id": form_id,
-    title: '',
-    rootPath: '',
-    useBinding: false,
-    sections: getSubmissionSections(form_id),
+    "title": "",
+    "rootPath": "",
+    "useBinding": true,
+    "sections": sections,
+    "model":mymodel,
     success: function () {
       processForm("save", repo, form_id, fid);
 
     }
   });
+      f.render({"target": destinationSelector});
+      f.setModel(mymodel);
   app.forms[form_id] = f;
-  f.render({"target": destinationSelector});
 
   $('.dropzone').each(function (index) {
     let upload_defaults = config.upload_defaults;
@@ -415,7 +413,6 @@ function loadForm(destinationSelector, data, fid, repo, form_id) {
     let dictFileTooBig = $(this).attr("dictFileTooBig") ? $(this).attr("dictFileTooBig") : upload_defaults.dictFileTooBig;
     let addRemoveLinks = $(this).attr("addRemoveLinks") == '' ? upload_defaults.addRemoveLinks : ($(this).attr("addRemoveLinks") == 'true');
     let dictMaxFilesExceeded = $(this).attr("dictMaxFilesExceeded") ? $(this).attr("dictMaxFilesExceeded") : upload_defaults.dictMaxFilesExceeded;
-
 
     let myDropzone = new Dropzone("div#" + $(this).attr("id"), {
       "dz_id": $(this).attr("id") + "_dz", "fid": fid, "form_id": form_id,
@@ -431,7 +428,6 @@ function loadForm(destinationSelector, data, fid, repo, form_id) {
     dropzones[$(this).attr("id")] = myDropzone;
   });
 
-
   let modifiedUsername = decodeURIComponent(getCookie(repo + '.cot_uname'));
   let modifiedName = decodeURIComponent(getCookie(repo + '.firstName')) + ' ' + decodeURIComponent(getCookie(repo + '.lastName'));
   let modifiedEmail = decodeURIComponent(getCookie(repo + '.email'));
@@ -446,9 +442,11 @@ function loadForm(destinationSelector, data, fid, repo, form_id) {
   }
   // View/Edit existing report
   else {
-    f.setData(data);
+    //f.setData(data);
+    mymodel.set(data);
+    f.setModel(mymodel);
     $('.dropzone').each(function () {
-      console.log('show uploads')
+
       showUploads(dropzones[$(this).attr("id")], $(this).attr("id"), data, repo, true, true);
     })
 
@@ -467,9 +465,9 @@ function loadForm(destinationSelector, data, fid, repo, form_id) {
       }
     }
   }
-  //f.CotForm.callFunction(toggleView("form_pane");)
+
   toggleView("form_pane");
-  //typeof registerEvents==="function"?registerEvents():"";
+
 }
 
 /**
@@ -558,7 +556,7 @@ function updateReport(fid, action, payload, msg, repo, form_id) {
  * @returns null
  */
 function deleteReport(fid, collectionName, after) {
-  console.log(fid, collectionName, after)
+
   let _after = after?after:null;
   if (fid && collectionName) {
 
@@ -592,12 +590,12 @@ function deleteReport(fid, collectionName, after) {
 function processForm(action, repo, form_id, fid) {
   let msg;
   //get the form data
-  let f_data = app.forms[form_id].getData();
+  let f_data = app.forms[form_id]._model.toJSON();
   //process any drop zones and add the uploaded file data to the payload.
   $('.dropzone').each(function (index) {
     f_data[$(this).attr("id")] = processUploads(dropzones[$(this).attr("id")], repo, true);
   })
-  console.log(f_data);
+
   msg = {
     'done': 'save.done',
     'fail': 'save.fail'
@@ -611,6 +609,10 @@ function processForm(action, repo, form_id, fid) {
   }
 }
 
+/**
+ *
+ * @param target
+ */
 function toggleView(target) {
   let appName, lastView, lastViewHash, lastViewName, lastHash;
   appName = config.default_repo;
@@ -618,7 +620,7 @@ function toggleView(target) {
   lastViewHash = $.cookie(encodeURIComponent(appName) + '.lastViewHash');
   lastViewName = $.cookie(encodeURIComponent(appName) + '.lastViewName');
   // lastHash = $.cookie(encodeURIComponent(appName) + '.lastHash');
-  console.log(target, lastViewHash, lastViewName);
+
   if (target === "view_pane") {
     $("#view_pane, .forView").show();
     $("#form_pane, .forForm").hide();
@@ -627,10 +629,10 @@ function toggleView(target) {
     setHashSilently(lastViewHash);
 
     if ($("#view_pane").is(":empty")) {
-      hasher.setHash(appName + '/?ts=' + new Date().getTime() + '&status=');
+      hasher.setHash(config.default_view + '/?ts=' + new Date().getTime() + '&status=');
     }
     else {
-      console.log('view reload')
+
       myDataTable.dt.ajax.reload(null, false);
       $("#viewtitle").html(lastViewName === "" ? config.title : lastViewName);
     }
@@ -648,12 +650,6 @@ function setHashSilently(hash) {
   hasher.setHash(hash); //set hash without dispatching changed signal
   hasher.changed.active = true; //re-enable signal
 }
-
-/**
- * @class cc_retrieve_view
- * @classdesc COT C3API oData DataTable implementation
- * @example for an example, see the openView method
- */
 class cc_retrieve_view {
   /**
    * @method constructor
@@ -717,9 +713,863 @@ class cc_retrieve_view {
   getSelected() {
     let _this = this, ret = [];
     $.each(this.dt.column(0).checkboxes.selected(), function (i, val) {
-      //console.log('selected',i,val);
-      ret.push(val);
-      //ret.push(_this.dt.row($('#' + val)).data());
+      ret.push(_this.dt.row($('#' + val)).data());
+    });
+    return ret;
+  }
+
+  /**
+   * @method getTable
+   * @returns {*}
+   */
+  getTable() {
+    return this.dom_table;
+  }
+
+  /**
+   * @method render
+   * @returns {*}
+   */
+  render() {
+    let _this = this;
+    let unid = this.uniqueId(4);
+    let cols = this.getColumns();
+    let listHTML = '<table class="" style="width:100%;" id="' + unid + '" >';
+    /*
+    if ($.fn.dataTableExt.afnFiltering.length === 0) {
+      $.fn.dataTableExt.afnFiltering.push(
+        function (oSettings, aData) {
+          let test = true;
+          //loop through all columns to see what type of filter to apply
+          $.each(_this.columnDefs, function (i, col) {
+            console.log('col:',col);
+          //currently only date range is implemented.
+            if (col.filter && col.type == "date") {
+              console.log('in date')
+              if (moment.isMoment(col.minDateFilter) && moment.isMoment(col.maxDateFilter) && test == true) {
+                test = moment(col.link ? $(aData[i]).text() : aData[i]).isBetween(col.minDateFilter, col.maxDateFilter);
+              }
+            }
+          });
+          return test;
+        }
+      );
+    }
+    */
+    listHTML += '<thead><tr>' + cols + '</tr></thead>';
+    listHTML += this.addFooter ? '<tfoot><tr>' + cols + '</tr></tfoot>' : '';
+    listHTML += '</table>';
+    let dateFormat = this.dateFormat;
+    this.target.empty().html(listHTML);
+    this.dt = $("#" + unid).DataTable({
+      'formName': _this.formName,
+      'scrollX': _this.addScroll, // USED FOR HORIZONTAL SCROLL BAR
+      'bAutoWidth': _this.addScroll,
+      'order': this.getColumnSortOrder(),
+      'bProcessing': true,
+      'bServerSide': true,
+      'dom': "<'row'<'col-sm-8 pull-left'i><'col-sm-4 pull-right'l>>" + "<'row'<'col-sm-12'tr>>" + "<'row'<'hidden'B><'col-sm-12 pull-right'p>>",
+      'buttons': ['pdfHtml5', 'csvHtml5', 'copyHtml5', 'excelHtml5'],
+      //'deferRender': false,
+      'sAjaxSource': this.url,
+      'fnServerData': this.fnServerOData,
+      //'iODataVersion': 4,
+      //'bUseODataViaJSONP': false,
+      'createdRow': function (row, data) {
+        let doc_id = data.id ? data.id : data['@odata.id'].substring((data['@odata.id'].indexOf("('") + 2), (data['@odata.id'].indexOf("')")));
+        $(row).attr('id', doc_id);
+        $(row).attr('data-id', doc_id);
+        $(row).attr('data-formName', _this.formName);
+      },
+      "columnDefs": this.columnDefs,
+      "select": true,
+      'initComplete': function () {
+        //Add filtering Table if requested
+        this.api().columns().every(function () {
+          let column = this;
+          if (_this.addFilter) {
+            //Add filtering to column if requested
+            if (_this.columnDefs[this.index()].filter) {
+              if (_this.columnDefs[this.index()].type === 'date') {
+                /*
+                 Add date rang picker here for advanced filtering
+                 */
+                let dr = $('<input aria-label="Filter for column:' + _this.columnDefs[this.index()].title + '" class="form-control input-xs" id="dr_filter_' + column.data + '" value=""/>')
+                  .appendTo($(column.footer()).empty().html("<span class='sr-only'>" + _this.columnDefs[this.index()].title + "</span>"))
+                  .on('change', function () {
+                    let val = $(this).val();
+                    column
+                      .search(val)
+                      .draw();
+                  });
+                dr.daterangepicker({
+                  autoUpdateInput: false,
+                  locale: {
+                    "format": "YYYY-MM-DD",
+                    "separator": " to ",
+                    "applyLabel": "Apply",
+                    "cancelLabel": "Clear"
+                  }
+                });
+                dr.on('apply.daterangepicker', function (ev, picker) {
+                  _this.columnDefs[column.index()].minDateFilter = picker.startDate;
+                  _this.columnDefs[column.index()].maxDateFilter = picker.endDate;
+
+
+                  $(this).val(picker.startDate.format(config.dateFormat) + ' - ' + picker.endDate.format(config.dateFormat));
+                  // console.log('picker.startDate: ',picker.startDate,'picker.endDate: ',picker.endDate ,$(this).val());
+                  console.log(column.index(), column, _this.columnDefs);
+                  column.search(
+                    _this.columnDefs[column.index()].data + ' ge ' + picker.startDate.format() + " and " +
+                    _this.columnDefs[column.index()].data + ' le ' + picker.endDate.format()
+                  ).draw();
+                });
+                dr.on('cancel.daterangepicker', function (ev, picker) {
+                  $(this).val('');
+                  _this.columnDefs[column.index()].minDateFilter = '';
+                  _this.columnDefs[column.index()].maxDateFilter = '';
+                  column
+                    .search('')
+                    .draw();
+                });
+              }
+              else if (_this.columnDefs[this.index()].type === 'text') {
+                let text_input = $("<input type=\"text\" size=\""+_this.columnDefs[this.index()].size +"\" class=\"dt_input_filter text_filter\"/>")
+                  .appendTo($(column.footer()).empty().html("<span class='sr-only'>" + _this.columnDefs[this.index()].title + "</span>"))
+                  .on('keyup', function () {
+                    let val = $(this).val();
+                    if(val.length>2){}
+                    column
+                      .search("contains(tolower("+ _this.columnDefs[column.index()].data +"), '"+ val.toLowerCase() +"')")
+                      .draw();
+
+                  });
+              }
+              else {
+                //add in dropdown and populate values
+                let select = $("<select style=\"max-width: 90%\" aria-label=\"Filter for column:" + _this.columnDefs[this.index()].title + "\"><option value=\"\"></option></select>")
+                  .appendTo($(column.footer()).empty().html("<span class='sr-only'>" + _this.columnDefs[this.index()].title + "</span>"))
+                  .on('change', function () {
+                    let val = $(this).val();
+                    column
+                      .search("contains(("+ _this.columnDefs[column.index()].data +"), '"+ val +"')")
+                      .draw();
+                  });
+                let options = new Array();
+
+                if (_this.columnDefs[this.index()].filterChoices) {
+                  $.each(_this.columnDefs[this.index()].filterChoices, function (i, val) {
+                    options.push('<option value="' + val + '">' + val + '</option>')
+                  });
+                }
+                else {
+                  column.data().each(function (d) {
+                    if ($.isArray(d)) {
+                      jQuery.each(d, function (index, item) {
+                        options.push('<option value="' + item + '">' + item + '</option>');
+                      })
+                    } else {
+                      options.push('<option value="' + d + '">' + d + '</option>')
+                    }
+                  });
+                }
+
+
+                $.each(jQuery.uniqueSort(options), function (index, item) {
+                  select.append(item);
+                });
+              }
+            }
+            else {
+              $(column.footer()).empty().html("<span class='sr-only'>" + _this.columnDefs[this.index()].title + "</span>")
+            }
+            column.draw();
+          }
+        });
+
+        // $("#maincontent .dataTable tbody tr").on('click', function(){
+        //    hasher.setHash($(this).attr('data-formName') + '/' + $(this).attr('data-id') + '?ts=' + new Date().getTime() );
+        // });
+
+        let tbody = $('#' + unid + ' tbody');
+        let dt = $('#' + unid).DataTable();
+        tbody.on('dblclick', 'tr', function () {
+          $(this).addClass('selected');
+          hasher.setHash($(this).attr('data-formName') + '/' + $(this).attr('data-id') + '?ts=' + new Date().getTime());
+        });
+
+        tbody.on('click', 'tr', function () {
+
+          if ($(this).hasClass('selected')) {
+            $(this).removeClass('selected');
+          }
+          else {
+            dt.$('tr.selected').removeClass('selected');
+            $(this).addClass('selected');
+          }
+        });
+
+        $('.input-mini.form-control').each(function (i) {
+          let cb = $(this);
+          cb.attr("id", cb.attr("name") + "_" + i)
+          cb.before($("<label />")
+            .attr("for", cb.attr("id"))
+            .text("Date Range Picker Input")
+            .addClass("sr-only"))
+        });
+      },
+      "bStateSave": true,
+      "fnStateSave": function (oSettings, oData) {
+        localStorage.setItem('DataTables_' + window.location.pathname, JSON.stringify(oData));
+      },
+      "fnStateLoad": function (oSettings) {
+        var data = localStorage.getItem('DataTables_' + window.location.pathname);
+        return JSON.parse(data);
+      }
+    });
+    this.dom_table = $("#" + unid);
+    return this.dt;
+  }
+
+  /**
+   * @method fnServerOData
+   * @param sUrl
+   * @param aoData
+   * @param fnCallback
+   * @param oSettings
+   */
+  fnServerOData(sUrl, aoData, fnCallback, oSettings) {
+    let oParams = {};
+    let asOrderBy = [];
+    $.each(aoData, function (i, value) {
+      oParams[value.name] = value.value;
+    });
+    let data = {"$format": "application/json;odata.metadata=none", "$count": true};
+    let bJSONP = oSettings.oInit.bUseODataViaJSONP;
+
+    if (bJSONP) {
+      data.$callback = "odatatable_" + (oSettings.oFeatures.bServerSide ? oParams.sEcho : ("load_" + Math.floor((Math.random() * 1000) + 1)));
+    }
+    $.each(oSettings.aoColumns, function (i, value) {
+
+      let sFieldName = (value.sName !== null && value.sName !== "") ? value.sName : ((typeof value.mData === 'string') ? value.mData : null);
+      //if (sFieldName === null || !isNaN(Number(sFieldName))) {sFieldName = value.sTitle;}
+      if (sFieldName === null || !isNaN(Number(sFieldName))) {
+        return;
+      }
+      if (data.$select == null) {
+        data.$select = sFieldName;
+      } else {
+        data.$select += "," + sFieldName;
+      }
+    });
+
+    if (oSettings.oFeatures.bServerSide) {
+      data.$skip = oSettings._iDisplayStart;
+      if (oSettings._iDisplayLength > -1) {
+        data.$top = oSettings._iDisplayLength;
+      }
+      let asFilters = [];
+      let asColumnFilters = []; //used for jquery.dataTables.columnFilter.js
+      let asRestrictFilters = [];
+      let isColumnArray = [];
+
+      $.each(oSettings.aoColumns,
+        function (i, value) {
+
+          let colIsArray = value.isArray ? value.isArray : false;
+          let sFieldName = value.sName || value.mData;
+          isColumnArray.push(colIsArray);
+          //added as a way to fake a Domino style RestrictToCategory. In the column definition, add a restrict property with the value you want to filter
+          let restrict = value.restrict;
+          let columnFilter = oParams["sSearch_" + i];
+
+          if ((oParams.sSearch !== null && oParams.sSearch !== "" || columnFilter !== null && columnFilter !== "" || restrict  && restrict !== "") && value.bSearchable) {
+            /*
+            if (oParams.sSearch !== null && oParams.sSearch !== "") {
+              console.log('SEARCH' , oParams);
+              asFilters.push("contains((" + sFieldName + "), '" + oParams.sSearch + "')");
+            }
+            */
+            if (columnFilter !== null && columnFilter !== "") {
+              if (value.isArray) {
+                //              if(colIsArray){
+                asColumnFilters.push(sFieldName + "/any(d:d eq '" + columnFilter + "')");
+              } else {
+
+                asColumnFilters.push(columnFilter);
+
+                //asColumnFilters.push("contains((" + sFieldName + "),'" + columnFilter + "')");
+
+              }
+            }
+
+            if (restrict  && restrict !== "") {
+              asRestrictFilters.push(restrict);
+            }
+          }
+        });
+
+      if (oSettings.oAjaxData.sSearch !== null && oSettings.oAjaxData.sSearch !== "") {
+        data.$search = oSettings.oAjaxData.sSearch
+      }
+      if (asFilters.length > 0) {
+        data.$filter = asFilters.join(" or ");
+      }
+      if (asColumnFilters.length > 0) {
+        if (data.$filter !== undefined) {
+          // console.log('if');
+          data.$filter = "(" + data.$filter + ") and (" + asColumnFilters.join(" and ") + ")";
+        } else {
+          //  console.log('else');
+          data.$filter = asColumnFilters.join(" and ");
+        }
+      }
+      if (asRestrictFilters.length > 0) {
+        if (data.$filter !== undefined) {
+          data.$filter = "(" + data.$filter + ") and (" + asRestrictFilters.join(" and ") + ")";
+        } else {
+          data.$filter = asRestrictFilters.join(" and ");
+        }
+      }
+      for (let i = 0; i < oParams.iSortingCols; i++) {
+        if (isColumnArray[oParams["iSortCol_" + i]]) {
+          asOrderBy.push(oParams["mDataProp_" + oParams["iSortCol_" + i]] + "/any(d:d) " + (oParams["sSortDir_" + i] || ""));
+        } else {
+          asOrderBy.push(oParams["mDataProp_" + oParams["iSortCol_" + i]] + " " + (oParams["sSortDir_" + i] || ""));
+        }
+      }
+      if (asOrderBy.length > 0) {
+        data.$orderby = asOrderBy.join();
+      }
+    }
+    sUrl += '?' +
+      Object.keys(data).map(function (key) {
+        return encodeURIComponent(key) + '=' +
+          encodeURIComponent(data[key]);
+      }).join('&');
+    $.ajax(jQuery.extend({}, oSettings.oInit.ajax, {
+      "url": sUrl,
+      "jsonp": bJSONP,
+      "dataType": bJSONP ? "jsonp" : "json",
+      "jsonpCallback": data["$callback"],
+      "cache": false,
+      "headers": {
+        //"Authorization": "AuthSession " + getCookie(config.default_repo + '.sid')
+      },
+      "success": function (data) {
+        let oDataSource = {};
+        oDataSource.aaData = data.value;
+        let iCount = data["@odata.count"];
+        if (iCount == null) {
+          if (oDataSource.aaData.length === oSettings._iDisplayLength) {
+            oDataSource.iTotalRecords = oSettings._iDisplayStart + oSettings._iDisplayLength + 1;
+          } else {
+            oDataSource.iTotalRecords = oSettings._iDisplayStart + oDataSource.aaData.length;
+          }
+        } else {
+          oDataSource.iTotalRecords = iCount;
+        }
+        oDataSource.iTotalDisplayRecords = oDataSource.iTotalRecords;
+        fnCallback(oDataSource);
+      }
+    }));
+  } // end fnServerData
+}
+
+class cc_retrieve_view2 {
+  /**
+   * @method constructor
+   * @param args {object} parameters to apply to the new cc_retrieve_view
+   */
+  constructor(args) {
+    this.url = args.url;
+    this.target = args.target;
+    this.formName = args.formName;
+    this.addFooter = args.addFooter;
+    this.addFilter = args.addFilter;
+    this.addScroll = args.addScroll;
+    this.columnDefs = args.columnDefs;
+    this.dateFormat = args.dateFormat;
+    this.sortOrder = args.sortOrder;
+    this.defaultSortOrder = args.defaultSortOrder;
+    this.dom_table;
+    this.dt;
+    this.dateFilterLoaded;
+  }
+
+  /**
+   * @method uniqueId
+   * @param length
+   * @returns {string}
+   * @description generates a unique uid of numeric characters with a length passed in in the length parameter
+   * this is used to create unique id for each DataTable on a page.
+   */
+  uniqueId(length) {
+    let id = Math.floor(Math.random() * 26) + Date.now();
+    return id.toString().substring(length);
+  }
+
+  /**
+   * @method getColumns
+   * @returns {string}
+   * @description
+   */
+  getColumns() {
+    let listHTML = "";
+    $.each(this.columnDefs, function () {
+      listHTML += '<th></th>';
+    });
+    return listHTML;
+  }
+
+  /**
+   * @method getColumnSortOrder
+   * @returns {Array}
+   */
+  getColumnSortOrder() {
+    let arrSortOrder = [];
+    $.each(this.columnDefs, function (i, item) {
+      if (item.data != null && item.sortOrder) {
+        arrSortOrder.push(new Array(i, item.sortOrder ? item.sortOrder : this.defaultSortOrder))
+      }
+    });
+    return arrSortOrder
+  }
+
+  getSelected() {
+    let _this = this, ret = [];
+    $.each(this.dt.column(0).checkboxes.selected(), function (i, val) {
+      ret.push(_this.dt.row($('#' + val)).data());
+    });
+    return ret;
+  }
+
+  /**
+   * @method getTable
+   * @returns {*}
+   */
+  getTable() {
+    return this.dom_table;
+  }
+
+  /**
+   * @method render
+   * @returns {*}
+   */
+  render() {
+    let _this = this;
+    let unid = this.uniqueId(4);
+    let cols = this.getColumns();
+    let listHTML = '<table class="" style="width:100%;" id="' + unid + '" >';
+    /*
+    if ($.fn.dataTableExt.afnFiltering.length === 0) {
+      $.fn.dataTableExt.afnFiltering.push(
+        function (oSettings, aData) {
+          let test = true;
+          //loop through all columns to see what type of filter to apply
+          $.each(_this.columnDefs, function (i, col) {
+            console.log('col:',col);
+          //currently only date range is implemented.
+            if (col.filter && col.type == "date") {
+              console.log('in date')
+              if (moment.isMoment(col.minDateFilter) && moment.isMoment(col.maxDateFilter) && test == true) {
+                test = moment(col.link ? $(aData[i]).text() : aData[i]).isBetween(col.minDateFilter, col.maxDateFilter);
+              }
+            }
+          });
+          return test;
+        }
+      );
+    }
+    */
+    listHTML += '<thead><tr>' + cols + '</tr></thead>';
+    listHTML += this.addFooter ? '<tfoot><tr>' + cols + '</tr></tfoot>' : '';
+    listHTML += '</table>';
+    let dateFormat = this.dateFormat;
+    this.target.empty().html(listHTML);
+    this.dt = $("#" + unid).DataTable({
+      'formName': _this.formName,
+      'scrollX': _this.addScroll, // USED FOR HORIZONTAL SCROLL BAR
+      'bAutoWidth': _this.addScroll,
+      'order': this.getColumnSortOrder(),
+      'bProcessing': true,
+      'bServerSide': true,
+      'dom': "<'row'<'col-sm-8 pull-left'i><'col-sm-4 pull-right'l>>" + "<'row'<'col-sm-12'tr>>" + "<'row'<'hidden'B><'col-sm-12 pull-right'p>>",
+      'buttons': ['pdfHtml5', 'csvHtml5', 'copyHtml5', 'excelHtml5'],
+      'deferRender': false,
+      //'stateSave': true,
+      // 'stateDuration': 0,
+      'sAjaxSource': this.url,
+      'fnServerData': this.fnServerOData,
+      'iODataVersion': 4,
+      'bUseODataViaJSONP': false,
+      'createdRow': function (row, data) {
+        //   let doc_id = data.id ? data.id : data['@odata.id'].substring((data['@odata.id'].indexOf("('") + 2), (data['@odata.id'].indexOf("')")));
+        let doc_id = data.id ? data.id : data['@odata.id'].substring((data['@odata.id'].indexOf("('") + 2), (data['@odata.id'].indexOf("')")));
+        $(row).attr('id', doc_id);
+        $(row).attr('data-id', doc_id);
+        $(row).attr('data-formName', _this.formName);
+      },
+      "columnDefs": this.columnDefs,
+      "select": true,
+      'initComplete': function () {
+        //Add filtering Table if requested
+        this.api().columns().every(function () {
+          let column = this;
+          if (_this.addFilter) {
+            //Add filtering to column if requested
+            if (_this.columnDefs[this.index()].filter) {
+              if (_this.columnDefs[this.index()].type === 'date') {
+                /*
+                 Add date rang picker here for advanced filtering
+                 */
+                let dr = $('<input aria-label="Filter for column:' + _this.columnDefs[this.index()].title + '" class="form-control input-xs" id="dr_filter_' + column.data + '" value=""/>')
+                  .appendTo($(column.footer()).empty().html("<span class='sr-only'>" + _this.columnDefs[this.index()].title + "</span>"))
+                  .on('change', function () {
+                    let val = $(this).val();
+                    column
+                      .search(val)
+                      .draw();
+                  });
+                dr.daterangepicker({
+                  autoUpdateInput: false,
+                  locale: {
+                    "format": "YYYY-MM-DD",
+                    "separator": " to ",
+                    "applyLabel": "Apply",
+                    "cancelLabel": "Clear"
+                  }
+                });
+                dr.on('apply.daterangepicker', function (ev, picker) {
+                  _this.columnDefs[column.index()].minDateFilter = picker.startDate;
+                  _this.columnDefs[column.index()].maxDateFilter = picker.endDate;
+
+
+                  $(this).val(picker.startDate.format(config.dateFormat) + ' - ' + picker.endDate.format(config.dateFormat));
+                  // console.log('picker.startDate: ',picker.startDate,'picker.endDate: ',picker.endDate ,$(this).val());
+                  console.log(column.index(), column, _this.columnDefs);
+                  column.search(
+                    _this.columnDefs[column.index()].data + ' ge ' + picker.startDate.format() + " and " +
+                    _this.columnDefs[column.index()].data + ' le ' + picker.endDate.format()
+                  ).draw();
+                });
+                dr.on('cancel.daterangepicker', function (ev, picker) {
+                  $(this).val('');
+                  _this.columnDefs[column.index()].minDateFilter = '';
+                  _this.columnDefs[column.index()].maxDateFilter = '';
+                  column
+                    .search('')
+                    .draw();
+                });
+              }
+              else if (_this.columnDefs[this.index()].type === 'text') {
+                let text_input = $('<input type="text" class="dt_input_filter text_filter"/>')
+                  .appendTo($(column.footer()).empty().html("<span class='sr-only'>" + _this.columnDefs[this.index()].title + "</span>"))
+                  .on('keyup', function () {
+                    let val = $(this).val();
+                    if(val.length>2){}
+                    column
+                      .search("contains(("+ _this.columnDefs[column.index()].data +"), '"+ val +"')")
+                      .draw();
+
+                  });
+              }
+              else {
+                //add in dropdown and populate values
+                let select = $('<select aria-label="Filter for column:' + _this.columnDefs[this.index()].title + '"><option value=""></option></select>')
+                  .appendTo($(column.footer()).empty().html("<span class='sr-only'>" + _this.columnDefs[this.index()].title + "</span>"))
+                  .on('change', function () {
+                    let val = $(this).val();
+                    column
+                      .search("contains(("+ _this.columnDefs[column.index()].data +"), '"+ val +"')")
+                      .draw();
+                  });
+                let options = new Array();
+
+                if (_this.columnDefs[this.index()].filterChoices) {
+                  $.each(_this.columnDefs[this.index()].filterChoices, function (i, val) {
+                    options.push('<option value="' + val + '">' + val + '</option>')
+                  });
+                }
+                else {
+                  column.data().each(function (d) {
+                    if ($.isArray(d)) {
+                      jQuery.each(d, function (index, item) {
+                        options.push('<option value="' + item + '">' + item + '</option>');
+                      })
+                    } else {
+                      options.push('<option value="' + d + '">' + d + '</option>')
+                    }
+                  });
+                }
+
+
+                $.each(jQuery.uniqueSort(options), function (index, item) {
+                  select.append(item);
+                });
+              }
+            }
+            else {
+              $(column.footer()).empty().html("<span class='sr-only'>" + _this.columnDefs[this.index()].title + "</span>")
+            }
+            column.draw();
+          }
+        });
+
+        // $("#maincontent .dataTable tbody tr").on('click', function(){
+        //    hasher.setHash($(this).attr('data-formName') + '/' + $(this).attr('data-id') + '?ts=' + new Date().getTime() );
+        // });
+
+        let tbody = $('#' + unid + ' tbody');
+        let dt = $('#' + unid).DataTable();
+        tbody.on('dblclick', 'tr', function () {
+          $(this).addClass('selected');
+          hasher.setHash($(this).attr('data-formName') + '/' + $(this).attr('data-id') + '?ts=' + new Date().getTime());
+        });
+
+        tbody.on('click', 'tr', function () {
+
+          if ($(this).hasClass('selected')) {
+            $(this).removeClass('selected');
+          }
+          else {
+            dt.$('tr.selected').removeClass('selected');
+            $(this).addClass('selected');
+          }
+        });
+
+        $('.input-mini.form-control').each(function (i) {
+          let cb = $(this);
+          cb.attr("id", cb.attr("name") + "_" + i)
+          cb.before($("<label />")
+            .attr("for", cb.attr("id"))
+            .text("Date Range Picker Input")
+            .addClass("sr-only"))
+        });
+      },
+      "bStateSave": true,
+      "fnStateSave": function (oSettings, oData) {
+        localStorage.setItem('DataTables_' + window.location.pathname, JSON.stringify(oData));
+      },
+      "fnStateLoad": function (oSettings) {
+        var data = localStorage.getItem('DataTables_' + window.location.pathname);
+        return JSON.parse(data);
+      }
+    });
+    this.dom_table = $("#" + unid);
+    return this.dt;
+  }
+
+  /**
+   * @method fnServerOData
+   * @param sUrl
+   * @param aoData
+   * @param fnCallback
+   * @param oSettings
+   */
+  fnServerOData(sUrl, aoData, fnCallback, oSettings) {
+    let oParams = {};
+    let asOrderBy = [];
+    $.each(aoData, function (i, value) {
+      oParams[value.name] = value.value;
+    });
+    let data = {"$format": "application/json;odata.metadata=none", "$count": true};
+    let bJSONP = oSettings.oInit.bUseODataViaJSONP;
+
+    if (bJSONP) {
+      data.$callback = "odatatable_" + (oSettings.oFeatures.bServerSide ? oParams.sEcho : ("load_" + Math.floor((Math.random() * 1000) + 1)));
+    }
+    $.each(oSettings.aoColumns, function (i, value) {
+
+      let sFieldName = (value.sName !== null && value.sName !== "") ? value.sName : ((typeof value.mData === 'string') ? value.mData : null);
+      //if (sFieldName === null || !isNaN(Number(sFieldName))) {sFieldName = value.sTitle;}
+      if (sFieldName === null || !isNaN(Number(sFieldName))) {
+        return;
+      }
+      if (data.$select == null) {
+        data.$select = sFieldName;
+      } else {
+        data.$select += "," + sFieldName;
+      }
+    });
+
+    if (oSettings.oFeatures.bServerSide) {
+      data.$skip = oSettings._iDisplayStart;
+      if (oSettings._iDisplayLength > -1) {
+        data.$top = oSettings._iDisplayLength;
+      }
+      let asFilters = [];
+      let asColumnFilters = []; //used for jquery.dataTables.columnFilter.js
+      let asRestrictFilters = [];
+      let isColumnArray = [];
+      $.each(oSettings.aoColumns,
+        function (i, value) {
+
+          let colIsArray = value.isArray ? value.isArray : false;
+          let sFieldName = value.sName || value.mData;
+          isColumnArray.push(colIsArray);
+          //added as a way to fake a Domino style RestrictToCategory. In the column definition, add a restrict property with the value you want to filter
+          let restrict = value.restrict;
+          let columnFilter = oParams["sSearch_" + i];
+
+          if ((oParams.sSearch !== null && oParams.sSearch !== "" || columnFilter !== null && columnFilter !== "" || restrict  && restrict !== "") && value.bSearchable) {
+            if (oParams.sSearch !== null && oParams.sSearch !== "") {
+              //  console.log('SEARCH' , oParams.sSearch);
+              asFilters.push("contains((" + sFieldName + "), '" + oParams.sSearch + "')");
+            }
+            if (columnFilter !== null && columnFilter !== "") {
+              if (value.isArray) {
+                //              if(colIsArray){
+                asColumnFilters.push(sFieldName + "/any(d:d eq '" + columnFilter + "')");
+              } else {
+
+                asColumnFilters.push(columnFilter);
+
+                //asColumnFilters.push("contains((" + sFieldName + "),'" + columnFilter + "')");
+
+              }
+            }
+
+            if (restrict  && restrict !== "") {
+              asRestrictFilters.push(restrict);
+            }
+          }
+        });
+
+      if (asFilters.length > 0) {
+        data.$filter = asFilters.join(" or ");
+      }
+
+      if (asColumnFilters.length > 0) {
+        if (data.$filter !== undefined) {
+          // console.log('if');
+          data.$filter = "(" + data.$filter + ") and (" + asColumnFilters.join(" and ") + ")";
+        } else {
+          //  console.log('else');
+          data.$filter = asColumnFilters.join(" and ");
+        }
+      }
+      //console.log('PRE:', data.$filter);
+      if (asRestrictFilters.length > 0) {
+        if (data.$filter !== undefined) {
+
+          data.$filter = "(" + data.$filter + ") and (" + asRestrictFilters.join(" and ") + ")";
+        } else {
+          // console.log('restrict else');
+          data.$filter = asRestrictFilters.join(" and ");
+        }
+      }
+      console.log(data.$filter)
+      for (let i = 0; i < oParams.iSortingCols; i++) {
+        if (isColumnArray[oParams["iSortCol_" + i]]) {
+          asOrderBy.push(oParams["mDataProp_" + oParams["iSortCol_" + i]] + "/any(d:d) " + (oParams["sSortDir_" + i] || ""));
+        } else {
+          asOrderBy.push(oParams["mDataProp_" + oParams["iSortCol_" + i]] + " " + (oParams["sSortDir_" + i] || ""));
+        }
+      }
+      if (asOrderBy.length > 0) {
+        data.$orderby = asOrderBy.join();
+      }
+    }
+    sUrl += '?' +
+      Object.keys(data).map(function (key) {
+        return encodeURIComponent(key) + '=' +
+          encodeURIComponent(data[key]);
+      }).join('&');
+    $.ajax(jQuery.extend({}, oSettings.oInit.ajax, {
+      "url": sUrl,
+      "jsonp": bJSONP,
+      "dataType": bJSONP ? "jsonp" : "json",
+      "jsonpCallback": data["$callback"],
+      "cache": false,
+      "headers": {
+        //"Authorization": "AuthSession " + getCookie(config.default_repo + '.sid')
+      },
+      "success": function (data) {
+        let oDataSource = {};
+        oDataSource.aaData = data.value;
+        let iCount = data["@odata.count"];
+        if (iCount == null) {
+          if (oDataSource.aaData.length === oSettings._iDisplayLength) {
+            oDataSource.iTotalRecords = oSettings._iDisplayStart + oSettings._iDisplayLength + 1;
+          } else {
+            oDataSource.iTotalRecords = oSettings._iDisplayStart + oDataSource.aaData.length;
+          }
+        } else {
+          oDataSource.iTotalRecords = iCount;
+        }
+        oDataSource.iTotalDisplayRecords = oDataSource.iTotalRecords;
+        fnCallback(oDataSource);
+      }
+    }));
+  } // end fnServerData
+}
+
+class cc_retrieve_viewOLD {
+  /**
+   * @method constructor
+   * @param args {object} parameters to apply to the new cc_retrieve_view
+   */
+  constructor(args) {
+    this.url = args.url;
+    this.target = args.target;
+    this.formName = args.formName;
+    this.addFooter = args.addFooter;
+    this.addFilter = args.addFilter;
+    this.addScroll = args.addScroll;
+    this.columnDefs = args.columnDefs;
+    this.dateFormat = args.dateFormat;
+    this.sortOrder = args.sortOrder;
+    this.defaultSortOrder = args.defaultSortOrder;
+    this.dom_table;
+    this.dt;
+    this.dateFilterLoaded;
+  }
+
+  /**
+   * @method uniqueId
+   * @param length
+   * @returns {string}
+   * @description generates a unique uid of numeric characters with a length passed in in the length parameter
+   * this is used to create unique id for each DataTable on a page.
+   */
+  uniqueId(length) {
+    let id = Math.floor(Math.random() * 26) + Date.now();
+    return id.toString().substring(length);
+  }
+
+  /**
+   * @method getColumns
+   * @returns {string}
+   * @description
+   */
+  getColumns() {
+    let listHTML = "";
+    $.each(this.columnDefs, function () {
+      listHTML += '<th></th>';
+    });
+    return listHTML;
+  }
+
+  /**
+   * @method getColumnSortOrder
+   * @returns {Array}
+   */
+  getColumnSortOrder() {
+    let arrSortOrder = [];
+    $.each(this.columnDefs, function (i, item) {
+      if (item.data != null && item.sortOrder) {
+        arrSortOrder.push(new Array(i, item.sortOrder ? item.sortOrder : this.defaultSortOrder))
+      }
+    });
+    return arrSortOrder
+  }
+
+  getSelected(){
+    let _this = this, ret = [];
+    $.each(this.dt.column(0).checkboxes.selected(), function(i, val){
+      ret.push(_this.dt.row($('#'+val)).data());
     });
     return ret;
   }
@@ -780,13 +1630,13 @@ class cc_retrieve_view {
       'iODataVersion': 4,
       'bUseODataViaJSONP': false,
       'createdRow': function (row, data) {
-        let doc_id = data.id ? data.id : "";
+        let doc_id = data.id ? data.id : data['@odata.id'].substring((data['@odata.id'].indexOf("('") + 2), (data['@odata.id'].indexOf("')")));
         $(row).attr('id', doc_id);
         $(row).attr('data-id', doc_id);
         $(row).attr('data-formName', _this.formName);
       },
       "columnDefs": this.columnDefs,
-      "select": true,
+      "select":true,
       'initComplete': function () {
         //Add filtering Table if requested
         this.api().columns().every(function () {
@@ -873,29 +1723,26 @@ class cc_retrieve_view {
           }
         });
 
-        // $("#maincontent .dataTable tbody tr").on('click', function(){
-        //    hasher.setHash($(this).attr('data-formName') + '/' + $(this).attr('data-id') + '?ts=' + new Date().getTime() );
-        // });
 
-        let tbody = $('#' + unid + ' tbody');
-        let dt = $('#' + unid).DataTable();
+        let tbody = $('#'+unid+ ' tbody');
+        let dt = $('#'+unid).DataTable();
         tbody.on('dblclick', 'tr', function () {
           //let data = dt.row( this ).data();
-          //console.log('row data:',data);
+
           $(this).addClass('selected');
-          hasher.setHash($(this).attr('data-formName') + '/' + $(this).attr('data-id') + '/?ts=' + new Date().getTime());
-        });
+          hasher.setHash($(this).attr('data-formName') + '/' + $(this).attr('data-id') + '?ts=' + new Date().getTime() );
+        } );
 
         tbody.on('click', 'tr', function () {
 
-          if ($(this).hasClass('selected')) {
+          if ( $(this).hasClass('selected') ) {
             $(this).removeClass('selected');
           }
           else {
             dt.$('tr.selected').removeClass('selected');
             $(this).addClass('selected');
           }
-        });
+        } );
 
         $('.input-mini.form-control').each(function (i) {
           let cb = $(this);
@@ -908,11 +1755,11 @@ class cc_retrieve_view {
       },
       "bStateSave": true,
       "fnStateSave": function (oSettings, oData) {
-        console.log("fnStateSave");
+
         localStorage.setItem('DataTables_' + window.location.pathname, JSON.stringify(oData));
       },
       "fnStateLoad": function (oSettings) {
-        console.log("fnStateLoad");
+
         var data = localStorage.getItem('DataTables_' + window.location.pathname);
         return JSON.parse(data);
       }
@@ -930,15 +1777,18 @@ class cc_retrieve_view {
    */
   fnServerOData(sUrl, aoData, fnCallback, oSettings) {
     let oParams = {};
+    let asOrderBy = [];
     $.each(aoData, function (i, value) {
       oParams[value.name] = value.value;
     });
     let data = {"$format": "application/json;odata.metadata=none", "$count": true};
     let bJSONP = oSettings.oInit.bUseODataViaJSONP;
+
     if (bJSONP) {
       data.$callback = "odatatable_" + (oSettings.oFeatures.bServerSide ? oParams.sEcho : ("load_" + Math.floor((Math.random() * 1000) + 1)));
     }
     $.each(oSettings.aoColumns, function (i, value) {
+
       let sFieldName = (value.sName !== null && value.sName !== "") ? value.sName : ((typeof value.mData === 'string') ? value.mData : null);
       //if (sFieldName === null || !isNaN(Number(sFieldName))) {sFieldName = value.sTitle;}
       if (sFieldName === null || !isNaN(Number(sFieldName))) {
@@ -958,26 +1808,36 @@ class cc_retrieve_view {
       }
       let asFilters = [];
       let asColumnFilters = []; //used for jquery.dataTables.columnFilter.js
+      let isColumnArray = [];
       $.each(oSettings.aoColumns,
         function (i, value) {
+
+          let colIsArray = value.isArray? value.isArray:false;
           let sFieldName = value.sName || value.mData;
+          isColumnArray.push(colIsArray);
           //added as a way to fake a Domino style RestrictToCategory. In the column definition, add a restrict property with the value you want to filter
           let restrict = value.restrict;
           let columnFilter = oParams["sSearch_" + i] + (restrict ? restrict : "");
-          //fortunately columnFilter's _number matches the index of aoColumns
           if ((oParams.sSearch !== null && oParams.sSearch !== "" || columnFilter !== null && columnFilter !== "") && value.bSearchable) {
             if (oParams.sSearch !== null && oParams.sSearch !== "") {
               asFilters.push("contains((" + sFieldName + "),'" + oParams.sSearch + "')");
             }
             if (columnFilter !== null && columnFilter !== "") {
-              asColumnFilters.push("contains((" + sFieldName + "),'" + columnFilter + "')");
+              if(value.isArray){
+                //              if(colIsArray){
+                asColumnFilters.push( sFieldName + "/any(d:d eq '" + columnFilter + "')");
+              }else{
+                asColumnFilters.push("contains((" + sFieldName + "),'" + columnFilter + "')");
+              }
             }
           }
+
         });
 
       if (asFilters.length > 0) {
         data.$filter = asFilters.join(" or ");
       }
+
       if (asColumnFilters.length > 0) {
         if (data.$filter !== undefined) {
           data.$filter = "(" + data.$filter + ") and (" + asColumnFilters.join(" and ") + ")";
@@ -986,9 +1846,13 @@ class cc_retrieve_view {
         }
       }
 
-      let asOrderBy = [];
+
       for (let i = 0; i < oParams.iSortingCols; i++) {
-        asOrderBy.push(oParams["mDataProp_" + oParams["iSortCol_" + i]] + " " + (oParams["sSortDir_" + i] || ""));
+        if(isColumnArray[oParams["iSortCol_" + i]]){
+          asOrderBy.push(oParams["mDataProp_" + oParams["iSortCol_" + i]] + "/any(d:d) " + (oParams["sSortDir_" + i] || ""));
+        }else{
+          asOrderBy.push(oParams["mDataProp_" + oParams["iSortCol_" + i]] + " " + (oParams["sSortDir_" + i] || ""));
+        }
       }
       if (asOrderBy.length > 0) {
         data.$orderby = asOrderBy.join();
@@ -1063,7 +1927,7 @@ function processUploads(DZ, repo, sync) {
   let _files = DZ.getFilesWithStatus(Dropzone.SUCCESS);
   let syncFiles = sync;
   if (_files.length == 0) {
-    //  console.log('No Files Attached')
+
   } else {
     $.each(_files, function (i, row) {
       let json = JSON.parse(row.xhr.response);
@@ -1089,7 +1953,7 @@ function processUploads(DZ, repo, sync) {
  * @param showTable {boolean} - display the uploaded file table.
  */
 function showUploads(DZ, id, data, repo, allowDelete, showTable) {
-  console.log(id, data, showTable);
+
   /*
   let thisDZ = DZ;
   let _uploads = `<table width='100%' class="table-condensed table-responsive"><thead><tr><th>Name</th><th>Size</th><th>Actions</th></tr></thead><tbody>`;
@@ -1148,7 +2012,7 @@ function showUploads(DZ, id, data, repo, allowDelete, showTable) {
     thisDZ.emit("addedfile", row);
     //add the thumbnail to the dropzone for all files already on the server
     thisDZ.emit("thumbnail", row, getDefaultThumbnail(row.type));
-    //console.log('createThumbnailFromUrl',row, getURL)
+
     thisDZ.createThumbnailFromUrl(row, getURL);
     //set the uploaded file to completed and set the max files for this dropzone.
     thisDZ.emit("complete", row);
@@ -1209,10 +2073,8 @@ function getDefaultThumbnail(stringType) {
   return thumb
 }
 
+
 /*
-Additional functionality for coreJS
-@ToDo merge these methods into a forked branch of coreJS
- */
 CotForm.prototype.getData = function () {
   let multi = ['checkbox', 'select-multiple'];
   let data = {}, blanks = {}, rowIndexMap = {}; // {stringIndex: intIndex}
@@ -1255,6 +2117,7 @@ CotForm.prototype.setData = function (data) {
   function standardFieldOp(field, val) {
     if (field.length === 1) { // SINGLE FIELD ELMENT
       if (Array.isArray(val)) { // MULTIPLE VALUE ELEMENT - AKA SELECT
+
         for (let i = 0, l = val.length; i < l; i++) {
           field.find('[value="' + val[i] + '"]').prop('selected', true);
         }
@@ -1286,6 +2149,7 @@ CotForm.prototype.setData = function (data) {
   let form = $('#' + this.cotForm.id);
   for (let k in data) {
     if (k === 'rows') { // GRID FIELDS
+
       for (let i = 0, l = data[k].length; i < l; i++) {
         if (i > 0) { // ADD ROW IF NEEDED
           let fields = $();
@@ -1295,6 +2159,7 @@ CotForm.prototype.setData = function (data) {
           fields.closest('tr').siblings('tr:last-child').find('button').trigger('click');
         }
         for (let k2 in data[k][i]) { // ASSIGN VALUES
+          //console.log(k2 , data[k][i][k2], form.find('[name="row[' + i + '].' + k2 + '"]'));
           standardFieldOp(form.find('[name="row[' + i + '].' + k2 + '"]'), data[k][i][k2]);
         }
       }
@@ -1303,25 +2168,7 @@ CotForm.prototype.setData = function (data) {
     }
   }
 };
-
-/**
- *
- * @param tm_id {string} id of the top menu item to append to
- * @param icon_class {string}  - glyphicon or font awesome
- * @param button_class {string} - class name for attaching events or other business logic
- * @param title {string}
- * @param action {function}  - function to be executed on click
- */
-
-function test(){
-  let top = addNavBarItem("","","","","Top",null, "dropdown");
-  let sub = addNavBarSubItem("","","","","Sub",null, "dropdown");
-  let mi = addNavBarMenuItem("glyphicon glyphicon-arrow-left","btn-test","My Test Button",function(){bootbox.alert("TEST 123")});
-  $(".nav.navbar-nav.navbar-right").prepend(top);
-  top.find('ul').append(sub);
-  sub.find('ul').append(mi);
-  $("#view-action-menu").find('ul:first').append(mi);
-}
+*/
 
 
 /**
@@ -1343,7 +2190,7 @@ function addNavBarItem(li_class, li_id, icon_class, button_class, html, action, 
   icon.attr('class', icon_class?icon_class:"");
   a.attr('class',button_class?button_class:"");
   action ? a.on("click", action):"";
-
+  let caret, ul;
   switch(type){
     case 'html':
       content = li.append(html);
@@ -1352,9 +2199,9 @@ function addNavBarItem(li_class, li_id, icon_class, button_class, html, action, 
       content =li.append(a.append(icon).append(' '+html));
       break;
     case 'dropdown':
-      let caret  = $('<span>');
+      caret  = $('<span>');
       caret.attr('class','caret');
-      let ul = $('<ul>');
+       ul = $('<ul>');
       ul.attr('class','dropdown-menu');
       li.attr('class','dropdown ');
       a.attr('data-toggle','dropdown');
@@ -1372,7 +2219,7 @@ function addNavBarSubItem(li_class, li_id, icon_class, button_class, html, actio
   icon.attr('class', icon_class?icon_class:"");
   a.attr('class',button_class?button_class:"");
   action ? a.on("click", action):"";
-
+  let ul;
   switch(type){
     case 'html':
       content = li.append(html);
@@ -1382,7 +2229,7 @@ function addNavBarSubItem(li_class, li_id, icon_class, button_class, html, actio
       break;
     case 'dropdown':
 
-      let ul = $('<ul>');
+      ul = $('<ul>');
       ul.attr('class','dropdown-menu');
       li.attr('class','dropdown-submenu ');
       a.attr('tab-index','0');
@@ -1400,4 +2247,21 @@ function addNavBarMenuItem(icon_class, button_class, title, action){
   action ? a.on("click", action):"";
   li.append(a.append(icon).append(' '+title));
   return li;
+}
+/**
+ *
+ * @param tm_id {string} id of the top menu item to append to
+ * @param icon_class {string}  - glyphicon or font awesome
+ * @param button_class {string} - class name for attaching events or other business logic
+ * @param title {string}
+ * @param action {function}  - function to be executed on click
+ */
+function test(){
+  let top = addNavBarItem("","","","","Top",null, "dropdown");
+  let sub = addNavBarSubItem("","","","","Sub",null, "dropdown");
+  let mi = addNavBarMenuItem("glyphicon glyphicon-arrow-left","btn-test","My Test Button",function(){bootbox.alert("TEST 123")});
+  $(".nav.navbar-nav.navbar-right").prepend(top);
+  top.find('ul').append(sub);
+  sub.find('ul').append(mi);
+  $("#view-action-menu").find('ul:first').append(mi);
 }

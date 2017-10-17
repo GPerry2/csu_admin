@@ -124,7 +124,7 @@ gulp.task('_bower_extras', () => {
 gulp.task('_deploy_prep', () => {
   compress = false;
   return new Promise(resolve => {
-    runSequence('clear_image_cache', 'clean', 'lint', 'build', resolve);
+    runSequence('clear_image_cache', 'clean',  'build', resolve);
   });
 });
 

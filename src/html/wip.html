@@ -1,0 +1,76 @@
+<ul class="nav navbar-nav navbar-right" style="overflow:initial">
+  <li class="dropdown forView" id="view-action-menu">
+    <a tabindex="0" data-toggle="dropdown" data-submenu="">
+      <span class="" id="view-action-menu_title">Actions</span>
+      <span class="caret"></span>
+    </a>
+    <ul class="dropdown-menu">
+      <li class="dropdown-submenu"><a tabindex="0"><span class="glyphicon glyphicon-pencil"></span>Create New</a>
+        <ul class="dropdown-menu">
+          <li><a class="btn-createReport" data-status="" data-filter="" id="" onclick="" data-id="vendor" tabindex="\"><span class="glyphicon glyphicon-star"></span>Vendor</a></li>
+          <li><a class="btn-createReport" data-status="" data-filter="" id="" onclick="" data-id="user_status" tabindex="\"><span class="glyphicon glyphicon-glass"></span>System User Status Profile</a></li>
+          <li><a class="btn-createReport" data-status="" data-filter="" id="" onclick="" data-id="bu" tabindex="\"><span class="glyphicon glyphicon-glass"></span>Business Unit Profile</a></li>
+          <li><a class="btn-createReport" data-status="" data-filter="" id="" onclick="" data-id="rd" tabindex="\"><span class="glyphicon glyphicon-glass"></span>Reference Data</a></li>
+          <li><a class="btn-createReport" data-status="" data-filter="" id="" onclick="" data-id="bu_it" tabindex="\"><span class="glyphicon glyphicon-glass"></span>Business Unit Invoicing Text</a></li>
+        </ul>
+      </li>
+      <li><a class="btn-deleteSelected" data-status="" data-filter="" id="" onclick="" data-id="" tabindex="\"><span class=""></span>Delete Selected</a></li>
+    </ul>
+  </li>
+  <li class="dropdown forForm" id="export-menu" style="display: none;">
+    <a tabindex="0" data-toggle="dropdown" data-submenu="">
+      <span class="" id="export-menu_title">Actions</span>
+      <span class="caret"></span>
+    </a>
+    <ul class="dropdown-menu">
+      <li><a class="" data-status="" data-filter="" id="menu-save" onclick="$('#form_pane form:first').trigger('submit');" data-id="" tabindex="\"><span class="glyphicon glyphicon-save"></span> Save</a></li>
+      <li><a class="" data-status="" data-filter="" id="test123" onclick="$.getJSON('https://dom01d.toronto.ca/inter/city/verify.nsf/rest.xsp/restapi/keys/921010SKYWALKER',function(data){console.log(data)});" data-id="" tabindex="\"><span class="glyphicon glyphicon-save"></span> TEST</a></li>
+    </ul>
+  </li>
+  <li class="dropdown" id="view-menu">
+    <a tabindex="0" data-toggle="dropdown" data-submenu="">
+      <span class="" id="view-menu_title">View</span>
+      <span class="caret"></span>
+    </a>
+    <ul class="dropdown-menu">
+      <li class="dropdown-submenu"><a tabindex="0"><span class="glyphicon glyphicon-star"></span>System Admin</a>
+        <ul class="dropdown-menu">
+          <li><a class="tablink" data-status="" data-filter="" id="" onclick="" data-id="vendor" tabindex="\"><span class=""></span>Vendor Profiles</a></li>
+          <li><a class="tablink" data-status="" data-filter="" id="" onclick="" data-id="user_status" tabindex="\"><span class=""></span>System User Status Profiles</a></li>
+          <li><a class="tablink" data-status="" data-filter="" id="" onclick="" data-id="bu" tabindex="\"><span class=""></span>Business Unit Profile</a></li>
+          <li><a class="tablink" data-status="" data-filter="" id="" onclick="" data-id="rd" tabindex="\"><span class=""></span>Reference Data</a></li>
+          <li><a class="tablink" data-status="" data-filter="" id="" onclick="" data-id="bu_it" tabindex="\"><span class=""></span>Business Unit Invoicing Text</a></li>
+        </ul>
+      </li>
+      <li class="dropdown-submenu"><a tabindex="0"><span class="glyphicon glyphicon-glass"></span>Work Orders</a>
+        <ul class="dropdown-menu">
+          <li><a class="tablink" data-status="" data-filter="" id="" onclick="" data-id="hot_eats" tabindex="\"><span class=""></span>All Events</a></li>
+          <li><a class="tablink" data-status="Pending" data-filter="{&quot;items&quot;:[{&quot;field&quot;:&quot;he_eventStatus&quot;,&quot;value&quot;:&quot;Pending&quot;}]}" id="" onclick="" data-id="hot_eats" tabindex="\"><span class=""></span>Pending Events</a></li>
+          <li><a class="tablink" data-status="Approved" data-filter="{&quot;items&quot;:[{&quot;field&quot;:&quot;he_eventStatus&quot;,&quot;value&quot;:&quot;Approved&quot;}]}" id="" onclick="" data-id="hot_eats" tabindex="\"><span class=""></span>Approved Events</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li class="dropdown forView" id="export-menu">
+    <a tabindex="0" data-toggle="dropdown" data-submenu="">
+      <span class="" id="export-menu_title">Export</span>
+      <span class="caret"></span>
+    </a>
+    <ul class="dropdown-menu">
+      <li><a class="tabexport" data-status="" data-filter="" id="tabExportPDF" onclick="" data-id="" tabindex="\"><span class="fa fa-file-pdf-o"></span> PDF</a></li>
+      <li><a class="tabexport" data-status="" data-filter="" id="tabExportCSV" onclick="" data-id="" tabindex="\"><span class="fa fa-file-code-o"></span> CSV</a></li>
+      <li><a class="tabexport" data-status="" data-filter="" id="tabExportEXCEL" onclick="" data-id="" tabindex="\"><span class="fa fa-file-excel-o"></span> EXCEL</a></li>
+      <li><a class="tabexport" data-status="" data-filter="" id="tabExportCopy" onclick="" data-id="" tabindex="\"><span class="fa fa-clone"></span> Copy</a></li>
+    </ul>
+  </li>
+  <li><div class="forView" id="custom-search-input" style="width:200px !important;margin:3px;"><div class="input-group"><div class="form-group has-feedback has-clear"><label for="admin_search" class="sr-only">Site wide search input </label><input id="admin_search" class="form-control" placeholder="keywordsearch" name="admin_search"><span class="form-control-clear glyphicon glyphicon-remove form-control-feedback hidden"></span></div></div></div></li>
+  <li class="dropdown" id="user_auth">
+    <a tabindex="0" data-toggle="dropdown" data-submenu="">
+      <span class="glyphicon glyphicon-user" id="user_auth_title"><span style="margin-left:4px;">gperry2</span></span>
+      <span class="caret"></span>
+    </a>
+    <ul class="dropdown-menu">
+      <li><a class="" data-status="" data-filter="" id="lo_username" onclick="cot_login_app.logout();" data-id="" tabindex="\"><span class="glyphicon glyphicon-log-out"></span>Logout</a></li>
+    </ul>
+  </li>
+</ul>

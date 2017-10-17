@@ -2,34 +2,90 @@
 /**
  * Created by gperry2 on 03/14/2017.
  */
-const base = "https://dom01d.toronto.ca/intra/edc/TCHotspot.nsf/";
+const base = "https://dom01d.toronto.ca/inter/fmd/csu_export.nsf/rest.xsp/restapi/";
 
 function loadDominoData(form, process){
-  let url = base;
+  let url =base;
   let view = "";
+  let app= config.default_repo;
   switch(form){
-    case 'hot_spot':
-      view = "hotSpotJSON.xsp";
+    case 'Volunteer':
+      url  = 'https://dom01d.toronto.ca/decom/volunteers_export.nsf';
+      view = "/exportData.xsp?viewName=volunteer";
+      app = "TEOVolunteer";
       break;
-    case 'hot_eats':
-      view = "hotEatsJSON.xsp";
+    case 'Event':
+      url  = 'https://dom01d.toronto.ca/decom/volunteers_export.nsf';
+      view = "/exportData.xsp?viewName=event";
+      app = "TEOVolunteer";
       break;
-    default:
-      view = "";
+    case 'Registration':
+      url  = 'https://dom01d.toronto.ca/decom/volunteers_export.nsf';
+      view = "/exportData.xsp?viewName=registration";
+      app = "TEOVolunteer";
+      break;
+    case 'wo':
+      //view = "exportVOHeaderByVendorNo";
+      url  = "https://dom01d.toronto.ca/inter/fmd/csu_export.nsf";
+      app = "csu";
+      view = "/exportData.xsp?viewName=wo";
+      break;
+    case 'wo_detail':
+      //view = "exportHeadersByOrderVendor";
+      url  = "https://dom01d.toronto.ca/inter/fmd/csu_export.nsf";
+      app = "csu";
+      view = "/exportData.xsp?viewName=wo_detail";
+      break;
+    case 'steps':
+      url  = "https://dom01d.toronto.ca/inter/fmd/csu_export.nsf";
+      app = "csu";
+      view = "/exportData.xsp?viewName=steps";
+      //view = "exportStepsByPMOrderVendor";
+      break;
+    case 'vendor':
+      url  = "https://dom01d.toronto.ca/inter/fmd/csu_export.nsf";
+      app = "csu";
+      view = "/exportData.xsp?viewName=vendor";
+        //view = "exportvendorprofiles";
+      break;
+    case 'bu':
+      url  = "https://dom01d.toronto.ca/inter/fmd/csu_export.nsf";
+      app = "csu";
+      view = "/exportData.xsp?viewName=bu";
+     // view = "exportbu";
+      break;
+    case'user_status':
+      url  = "https://dom01d.toronto.ca/inter/fmd/csu_export.nsf";
+      app = "csu";
+      view = "/exportData.xsp?viewName=user_status";
+      //view = "exportUserStatusCodes";
+      break;
+    case'bu_it':
+      url  = "https://dom01d.toronto.ca/inter/fmd/csu_export.nsf";
+      app = "csu";
+      view = "/exportData.xsp?viewName=bu_it";
+   //   view = "export_bu_it";
+      break;
+    case 'rd':
+      url  = "https://dom01d.toronto.ca/inter/fmd/csu_export.nsf";
+      app = "csu";
+      view = "/exportData.xsp?viewName=rd";
+      //view = "exportrefvalues";
       break;
   }
   $.getJSON(url + view , function(data) {
     $.each(data, function (i, val) {
-     if(i>=10){return false}
+    // if(i>=5){return false}
       let postdata = JSON.stringify(process ? process(val) : val);
 
 
       $.ajax({
-        url: config.httpHost.app[httpHost] + config.api.post + config.default_repo + "/" + form + '?sid=' + getCookie(config.default_repo + '.sid'),
+        url: config.httpHost.app[httpHost] + config.api.post + app + "/" + form ,
         type: 'POST',
         data: postdata,
-        async: false,
+        //async: false,
         headers: {
+          "Authorization": "AuthSession " + getCookie(config.default_repo + '.sid'),
           'Content-Type': 'application/json; charset=utf-8;',
           'Cache-Control': 'no-cache'
         },
@@ -75,8 +131,9 @@ function deleteData(form){
 
 
 }
-function deleteEntity(form){
-  let url = config.httpHost.app[httpHost]+ config.api.post + config.default_repo +'/RemoveEntitySet?sid=' + getCookie('csu.sid');
+function deleteEntity(form, appName){
+  let app  = appName?appName:config.default_repo;
+  let url = config.httpHost.app[httpHost]+ config.api.post + app +'/RemoveEntitySet?sid=' + getCookie('csu.sid');
   let val = {};
   val.EntitySetName= form;
   let postdata = JSON.stringify(val);
@@ -84,6 +141,7 @@ function deleteEntity(form){
     url: url,
     type: 'POST',
     headers: {
+      "Authorization": "AuthSession " + getCookie(config.default_repo + '.sid'),
       'Content-Type': 'application/json; charset=utf-8;',
     },
     data:postdata,
